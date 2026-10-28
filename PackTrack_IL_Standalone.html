@@ -1,0 +1,1912 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
+  <title>PackTrack Pro v2.0 — מרכז המעקב של יצחק צדיק</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Heebo', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    :root {
+      color-scheme: light;
+    }
+    body {
+      font-family: 'Heebo', system-ui, -apple-system, sans-serif;
+      background: #f1f5f9;
+      color: #0f172a;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .mono-num {
+      font-family: 'JetBrains Mono', monospace;
+      direction: ltr;
+      unicode-bidi: isolate;
+      font-variant-numeric: tabular-nums;
+    }
+    .card-elevated {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 2px 10px -2px rgba(15, 23, 42, 0.05), 0 4px 16px -4px rgba(15, 23, 42, 0.04);
+      transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
+    }
+    .card-elevated:hover {
+      box-shadow: 0 8px 24px -4px rgba(15, 23, 42, 0.09);
+      border-color: #cbd5e1;
+    }
+    .pickup-glow {
+      border: 2px solid #10b981 !important;
+      background: linear-gradient(180deg, #ffffff 0%, #f0fdf4 100%);
+    }
+    .action-glow {
+      border: 2px solid #f59e0b !important;
+      background: linear-gradient(180deg, #ffffff 0%, #fffbeb 100%);
+    }
+    .custom-scroll::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-scroll::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    .custom-scroll::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 9999px;
+    }
+    @keyframes pulseDot {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.35); opacity: 0.65; }
+    }
+    .live-dot {
+      animation: pulseDot 2s infinite ease-in-out;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+  <!-- Top App Header -->
+  <header class="sticky top-0 z-30 bg-slate-900 text-white border-b border-slate-800 shadow-md">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3.5 flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-900/40">
+          <i data-lucide="package-check" class="w-6 h-6 text-white"></i>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-lg sm:text-xl font-black tracking-tight text-white">PackTrack Pro v2.0</h1>
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+              <span class="w-2 h-2 rounded-full bg-emerald-400 live-dot"></span>
+              Gmail Live • אוקטובר 2026
+            </span>
+          </div>
+          <p class="text-xs text-slate-300">סנכרון מיילים אמיתי מ-AliExpress, דואר ישראל, צ'יטה ו-Terminal X (`yitzhaki173@gmail.com`)</p>
+        </div>
+      </div>
+
+      <!-- Top Action Buttons -->
+      <div class="flex flex-wrap items-center gap-2">
+        <button id="btnOpenLiveSync" type="button" class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm transition cursor-pointer">
+          <i data-lucide="refresh-cw" class="w-4 h-4" id="syncSpinnerIcon"></i>
+          <span>סנכרון חי מ-Gmail</span>
+        </button>
+
+        <button id="btnOpenParserModal" type="button" class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold bg-indigo-600 hover:bg-indigo-500 text-white shadow-sm transition cursor-pointer">
+          <i data-lucide="mail-plus" class="w-4 h-4"></i>
+          <span>פענוח מייל / SMS חדש</span>
+        </button>
+
+        <button id="btnOpenAddModal" type="button" class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-slate-800 hover:bg-slate-700 text-slate-100 border border-slate-700 transition cursor-pointer">
+          <i data-lucide="plus" class="w-4 h-4"></i>
+          <span>הוספה ידנית</span>
+        </button>
+
+        <button id="btnToggleBulkMode" type="button" class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition cursor-pointer">
+          <i data-lucide="check-square" class="w-4 h-4"></i>
+          <span id="bulkModeBtnLabel">בחירה מרובה ומחיקה</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Urgent Pickup & Action Banner -->
+  <section id="urgentBannerSection" class="bg-gradient-to-l from-emerald-900 via-teal-900 to-slate-900 text-white border-b border-emerald-800/60">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <span class="px-2.5 py-1 rounded-lg bg-emerald-500 text-slate-950 font-black text-xs uppercase tracking-wider">מוכן לאיסוף כעת</span>
+        <div class="text-xs sm:text-sm font-medium text-emerald-50">
+          <strong class="font-bold text-white">3 חבילות ממתינות לאיסוף מיידי:</strong>
+          <span class="mx-1">•</span>
+          <span>חבילה מאוחדת 5 פריטים בקרית שמונה (מדף <strong class="underline text-amber-300">ח 1322</strong>)</span>
+          <span class="mx-1">•</span>
+          <span>פלאי בלינסון 2 חולון (מדף <strong class="underline text-amber-300">ג 4208</strong>)</span>
+          <span class="mx-1">•</span>
+          <span>זוג סוללות Makita 18V 5.0Ah</span>
+          <span class="mx-1">•</span>
+          <span class="text-amber-300 font-bold">+ משלוח צ'יטה הממתין לבחירת נקודת איסוף!</span>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <button type="button" data-quick-filter="ready_for_pickup" class="quick-filter-trigger px-3 py-1.5 rounded-lg bg-white/15 hover:bg-white/25 text-xs font-bold text-white transition cursor-pointer">
+          הצג רק מוכנים לאיסוף
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Main Content Container -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 space-y-6">
+
+    <!-- KPI Summary Row -->
+    <section class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3" aria-label="סיכום חבילות">
+      <button type="button" data-kpi-filter="all" class="kpi-card card-elevated rounded-2xl p-3.5 text-right cursor-pointer ring-2 ring-indigo-600">
+        <div class="flex items-center justify-between text-slate-500 text-xs font-semibold mb-1">
+          <span>סה"כ פעילות</span>
+          <i data-lucide="layers" class="w-4 h-4 text-indigo-600"></i>
+        </div>
+        <div class="text-2xl font-black text-slate-900 mono-num" id="kpiTotalActive">0</div>
+        <div class="text-[11px] text-slate-500 mt-0.5" id="kpiTotalItemsSub">0 פריטים בפנים</div>
+      </button>
+
+      <button type="button" data-kpi-filter="ready_for_pickup" class="kpi-card card-elevated rounded-2xl p-3.5 text-right cursor-pointer">
+        <div class="flex items-center justify-between text-emerald-700 text-xs font-bold mb-1">
+          <span>מוכן לאיסוף!</span>
+          <i data-lucide="map-pin-check" class="w-4 h-4 text-emerald-600"></i>
+        </div>
+        <div class="text-2xl font-black text-emerald-600 mono-num" id="kpiReadyPickup">0</div>
+        <div class="text-[11px] text-emerald-700 font-medium mt-0.5">קודי מדף: ח 1322, ג 4208</div>
+      </button>
+
+      <button type="button" data-kpi-filter="action_required" class="kpi-card card-elevated rounded-2xl p-3.5 text-right cursor-pointer">
+        <div class="flex items-center justify-between text-amber-700 text-xs font-bold mb-1">
+          <span>דורש בחירת נקודה</span>
+          <i data-lucide="alert-triangle" class="w-4 h-4 text-amber-500"></i>
+        </div>
+        <div class="text-2xl font-black text-amber-600 mono-num" id="kpiActionRequired">0</div>
+        <div class="text-[11px] text-amber-700 font-medium mt-0.5">צ'יטה שליחויות</div>
+      </button>
+
+      <button type="button" data-kpi-filter="arrived_il" class="kpi-card card-elevated rounded-2xl p-3.5 text-right cursor-pointer">
+        <div class="flex items-center justify-between text-sky-700 text-xs font-bold mb-1">
+          <span>הגיע לישראל</span>
+          <i data-lucide="plane-landing" class="w-4 h-4 text-sky-600"></i>
+        </div>
+        <div class="text-2xl font-black text-sky-600 mono-num" id="kpiArrivedIL">0</div>
+        <div class="text-[11px] text-slate-500 mt-0.5">במיון דואר ישראל</div>
+      </button>
+
+      <button type="button" data-kpi-filter="in_transit" class="kpi-card card-elevated rounded-2xl p-3.5 text-right cursor-pointer">
+        <div class="flex items-center justify-between text-indigo-700 text-xs font-bold mb-1">
+          <span>בדרך / נשלח</span>
+          <i data-lucide="truck" class="w-4 h-4 text-indigo-600"></i>
+        </div>
+        <div class="text-2xl font-black text-indigo-600 mono-num" id="kpiInTransit">0</div>
+        <div class="text-[11px] text-slate-500 mt-0.5">AliExpress, Terminal X, 4PX</div>
+      </button>
+
+      <button type="button" data-kpi-filter="archived" class="kpi-card card-elevated rounded-2xl p-3.5 text-right cursor-pointer">
+        <div class="flex items-center justify-between text-slate-600 text-xs font-semibold mb-1">
+          <span>נאספו / נמחקו</span>
+          <i data-lucide="archive" class="w-4 h-4 text-slate-500"></i>
+        </div>
+        <div class="text-2xl font-black text-slate-700 mono-num" id="kpiArchived">0</div>
+        <div class="text-[11px] text-slate-500 mt-0.5">שמור בזיכרון קבוע</div>
+      </button>
+    </section>
+
+    <!-- Bulk Selection Action Bar (Hidden unless bulk mode or items selected) -->
+    <section id="bulkActionBar" class="hidden bg-rose-950 text-white rounded-2xl p-3.5 shadow-lg border border-rose-800 flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <span class="inline-flex items-center justify-center w-8 h-8 rounded-xl bg-rose-600 font-black text-sm mono-num" id="bulkSelectedCount">0</span>
+        <div>
+          <p class="text-sm font-bold">מצב בחירה ומחיקה מרובה פעיל</p>
+          <p class="text-xs text-rose-200">כל הזמנה שתמחק תיכנס לרשימת חסימה קבועה (`deletedIds`) ולא תחזור לעולם ברענון!</p>
+        </div>
+      </div>
+      <div class="flex flex-wrap items-center gap-2">
+        <button id="btnSelectAllVisible" type="button" class="px-3 py-1.5 rounded-xl bg-rose-900 hover:bg-rose-800 text-xs font-semibold border border-rose-700 cursor-pointer">
+          בחר את כל המוצגות
+        </button>
+        <button id="btnBulkMarkCollected" type="button" class="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-xs font-bold text-white cursor-pointer">
+          סמן נבחרות כ"נאסף"
+        </button>
+        <button id="btnBulkDeletePermanent" type="button" class="px-3.5 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-xs font-black text-white shadow cursor-pointer">
+          מחק נבחרות לצמיתות
+        </button>
+        <button id="btnClearAllPackages" type="button" class="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-xs font-bold text-rose-300 border border-rose-700/60 cursor-pointer">
+          רוקן את כל ההזמנות באפליקציה
+        </button>
+      </div>
+    </section>
+
+    <!-- Filter & Search Controls Bar -->
+    <section class="card-elevated rounded-2xl p-4 space-y-3">
+      <div class="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+        <!-- Search Input -->
+        <div class="relative flex-1">
+          <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+          <input
+            id="searchInput"
+            type="search"
+            placeholder="חיפוש לפי מספר מעקב (RN0044168836Y), קוד איסוף (ח 1322 / ג 4208), שם מוצר (Makita, מיקרוגל, כרטיס רשת, משחק קופסה)..."
+            class="w-full pr-10 pl-9 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:bg-white transition"
+          />
+          <button id="btnClearSearch" type="button" class="hidden absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer">
+            <i data-lucide="x-circle" class="w-4 h-4"></i>
+          </button>
+        </div>
+
+        <!-- City / Store Filter + Sort -->
+        <div class="flex flex-wrap items-center gap-2">
+          <select id="cityFilterSelect" aria-label="סינון לפי עיר יעד" class="px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs sm:text-sm font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-600">
+            <option value="all">כל היעדים (חולון + קרית שמונה)</option>
+            <option value="חולון">חולון (הופיין 59 / בלינסון 2)</option>
+            <option value="קרית שמונה">קרית שמונה (הרצל 17/2 / תל חי 106)</option>
+          </select>
+
+          <select id="storeFilterSelect" aria-label="סינון לפי חנות או חברת שילוח" class="px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs sm:text-sm font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-600">
+            <option value="all">כל החנויות וחברות השילוח</option>
+            <option value="AliExpress">AliExpress (אליאקספרס)</option>
+            <option value="דואר ישראל">דואר ישראל (Israel Post)</option>
+            <option value="צ'יטה">צ'יטה שליחויות (Cheetah)</option>
+            <option value="TERMINAL X">TERMINAL X (טרמינל אקס)</option>
+            <option value="RTL-SDR">RTL-SDR.com / 4PX</option>
+          </select>
+
+          <button id="btnRestoreDefaults" type="button" title="שחזר הזמנות שנמחקו מתוך המייל" class="inline-flex items-center gap-1.5 px-3 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition cursor-pointer">
+            <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+            <span>שחזר הכל מהמייל</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Status Tabs -->
+      <div class="flex items-center gap-1.5 overflow-x-auto custom-scroll pb-1 pt-1" role="tablist">
+        <button type="button" data-tab="all" class="status-tab px-3.5 py-1.5 rounded-xl text-xs font-bold bg-slate-900 text-white shadow-sm whitespace-nowrap cursor-pointer">
+          הכל פעיל
+        </button>
+        <button type="button" data-tab="ready_for_pickup" class="status-tab px-3.5 py-1.5 rounded-xl text-xs font-bold bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-200 whitespace-nowrap cursor-pointer">
+          מוכן לאיסוף (3)
+        </button>
+        <button type="button" data-tab="action_required" class="status-tab px-3.5 py-1.5 rounded-xl text-xs font-bold bg-amber-50 text-amber-800 hover:bg-amber-100 border border-amber-200 whitespace-nowrap cursor-pointer">
+          דורש בחירת נקודה (1)
+        </button>
+        <button type="button" data-tab="arrived_il" class="status-tab px-3.5 py-1.5 rounded-xl text-xs font-bold bg-sky-50 text-sky-800 hover:bg-sky-100 border border-sky-200 whitespace-nowrap cursor-pointer">
+          הגיע לארץ (2)
+        </button>
+        <button type="button" data-tab="in_transit" class="status-tab px-3.5 py-1.5 rounded-xl text-xs font-bold bg-indigo-50 text-indigo-800 hover:bg-indigo-100 border border-indigo-200 whitespace-nowrap cursor-pointer">
+          בדרך / נשלח (5)
+        </button>
+        <button type="button" data-tab="archived" class="status-tab px-3.5 py-1.5 rounded-xl text-xs font-bold bg-slate-100 text-slate-700 hover:bg-slate-200 whitespace-nowrap cursor-pointer">
+          ארכיון / נאספו
+        </button>
+      </div>
+    </section>
+
+    <!-- Packages Grid -->
+    <section id="packagesContainer" class="grid grid-cols-1 lg:grid-cols-2 gap-4" aria-live="polite">
+      <!-- Populated dynamically by JS -->
+    </section>
+
+    <!-- Empty State -->
+    <section id="emptyStateBox" class="hidden card-elevated rounded-3xl p-10 text-center max-w-lg mx-auto my-6">
+      <div class="w-16 h-16 rounded-2xl bg-slate-100 text-slate-500 flex items-center justify-center mx-auto mb-4">
+        <i data-lucide="inbox" class="w-8 h-8"></i>
+      </div>
+      <h2 class="text-lg font-bold text-slate-800 mb-1" id="emptyStateTitle">אין חבילות להצגה בסינון הנוכחי</h2>
+      <p class="text-xs sm:text-sm text-slate-500 mb-5" id="emptyStateDesc">
+        אם מחקת הזמנות, הן שמורות ברשימת החסימה הקבועה של האפליקציה ולכן הן לא קופצות מחדש. תוכל להוסיף הזמנה חדשה, לסנכרן מהמייל או לשחזר במידת הצורך.
+      </p>
+      <div class="flex flex-wrap items-center justify-center gap-2">
+        <button id="btnEmptyShowAll" type="button" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold cursor-pointer">
+          הצג את כל ההזמנות הפעילות
+        </button>
+        <button id="btnEmptyRestore" type="button" class="px-4 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs font-bold cursor-pointer">
+          שחזר הזמנות שנמחקו
+        </button>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="bg-white border-t border-slate-200 mt-10 py-4 px-4 sm:px-6 text-xs text-slate-500">
+    <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2">
+      <div>
+        <strong class="text-slate-700">PackTrack Pro v2.0</strong> — מותאם אישית ליצחק צדיק (`yitzhaki173@gmail.com`) • תמונות מוצר מקוריות מתוך שרשורי AliExpress ו-Terminal X
+      </div>
+      <div class="flex items-center gap-3">
+        <span id="persistenceStatusBadge" class="inline-flex items-center gap-1 text-emerald-700 font-semibold">
+          <i data-lucide="shield-check" class="w-3.5 h-3.5"></i>
+          שמירת מחיקות קבועה פעילה (`Tombstone Engine v2`)
+        </span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- MODAL 1: Live Gmail Sync & Google Apps Script Bridge -->
+  <div id="modalLiveSync" class="fixed inset-0 z-50 hidden bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto custom-scroll shadow-2xl border border-slate-200 p-6 space-y-5">
+      <div class="flex items-start justify-between gap-3 border-b border-slate-100 pb-4">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center">
+            <i data-lucide="refresh-cw" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h2 class="text-lg font-black text-slate-900">סנכרון חי אוטומטי מ-Gmail (`Label_2` / `Label_3` / דואר ישראל)</h2>
+            <p class="text-xs text-slate-500">חיבור ישיר לתיבת `yitzhaki173@gmail.com` לשאיבת הזמנות ותמונות מוצר מקוריות</p>
+          </div>
+        </div>
+        <button type="button" data-close-modal="modalLiveSync" class="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 cursor-pointer">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Option A: Google Apps Script Bridge (Recommended, zero OAuth block) -->
+      <div class="bg-emerald-50/70 border border-emerald-200 rounded-2xl p-4 space-y-3">
+        <div class="flex items-center justify-between">
+          <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-600 text-white">מומלץ • ללא חסימות אימות של גוגל</span>
+          <span class="text-xs font-mono text-emerald-800">Google Apps Script Bridge</span>
+        </div>
+        <h3 class="text-sm font-bold text-slate-900">איך לחבר את האפליקציה ל-Gmail שלך ב-60 שניות (גם באנדרואיד וגם בווב):</h3>
+        <ol class="text-xs text-slate-700 space-y-1.5 list-decimal list-inside leading-relaxed">
+          <li>לחץ על <strong>"העתק קוד גשר ל-Gmail"</strong> למטה ופתח את <a href="https://script.google.com/home/start" target="_blank" rel="noopener noreferrer" class="text-indigo-600 underline font-bold">script.google.com</a> בחשבון `yitzhaki173@gmail.com`.</li>
+          <li>הדבק את הקוד, לחץ למעלה על <strong>Deploy &rarr; New deployment &rarr; Web app</strong> (הגדר <em>Who has access: Anyone</em>).</li>
+          <li>העתק את כתובת ה-Web App URL שקיבלת והדבק אותה בשדה למטה. מעכשיו כל לחיצה על "סנכרון חי" תשאב אוטומטית כל מייל חדש מ-AliExpress, Temu, דואר ישראל, צ'יטה ו-Terminal X כולל התמונות המקוריות!</li>
+        </ol>
+
+        <div class="flex flex-col sm:flex-row gap-2 pt-1">
+          <input
+            id="gasWebhookUrlInput"
+            type="url"
+            dir="ltr"
+            placeholder="https://script.google.com/macros/s/AKfycb.../exec"
+            class="flex-1 px-3.5 py-2 rounded-xl bg-white border border-emerald-300 text-xs mono-num focus:outline-none focus:ring-2 focus:ring-emerald-600"
+          />
+          <button id="btnRunGasSync" type="button" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-xs cursor-pointer whitespace-nowrap">
+            שמור וסנכרן עכשיו
+          </button>
+        </div>
+
+        <div class="flex items-center justify-between pt-1">
+          <button id="btnCopyGasScript" type="button" class="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-700 hover:text-indigo-900 underline cursor-pointer">
+            <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+            <span>העתק קוד Google Apps Script מוכן להדבקה</span>
+          </button>
+          <span id="gasSyncStatusText" class="text-xs text-slate-600"></span>
+        </div>
+      </div>
+
+      <!-- Option B: Direct Gmail OAuth Access Token -->
+      <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-2.5">
+        <h3 class="text-xs font-bold text-slate-800">אפשרות נוספת: סנכרון ישיר באמצעות Gmail API Access Token (`ya29...`)</h3>
+        <div class="flex flex-col sm:flex-row gap-2">
+          <input
+            id="gmailOAuthTokenInput"
+            type="password"
+            dir="ltr"
+            placeholder="ya29.a0AeDClZ..."
+            class="flex-1 px-3.5 py-2 rounded-xl bg-white border border-slate-300 text-xs mono-num focus:outline-none focus:ring-2 focus:ring-indigo-600"
+          />
+          <button id="btnRunDirectGmailApi" type="button" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold cursor-pointer whitespace-nowrap">
+            משוך מ-Gmail API
+          </button>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-between pt-2 border-t border-slate-100">
+        <span class="text-xs text-slate-500">עדכון מובנה אחרון מהמייל שלך: <strong>28/10/2026 22:02</strong> (11 משלוחים פעילים)</span>
+        <button type="button" data-close-modal="modalLiveSync" class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold cursor-pointer">
+          סגור
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 2: Smart HTML Email / SMS Parser -->
+  <div id="modalSmartParser" class="fixed inset-0 z-50 hidden bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto custom-scroll shadow-2xl border border-slate-200 p-6 space-y-4">
+      <div class="flex items-start justify-between gap-3 border-b border-slate-100 pb-3">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-2xl bg-indigo-100 text-indigo-700 flex items-center justify-center">
+            <i data-lucide="sparkles" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h2 class="text-lg font-black text-slate-900">מפענח חכם למיילים (HTML) והודעות SMS</h2>
+            <p class="text-xs text-slate-500">הדבק תוכן מייל או HTML מ-AliExpress / Temu / דואר ישראל / צ'יטה — והמערכת תחלץ אוטומטית מספר מעקב, קוד מדף ותמונת מוצר</p>
+          </div>
+        </div>
+        <button type="button" data-close-modal="modalSmartParser" class="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 cursor-pointer">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <textarea
+        id="rawEmailPasteInput"
+        rows="6"
+        placeholder="הדבק כאן הודעת SMS או תוכן מייל (כולל קישורי תמונות או מספרי מעקב כמו RN0044... / AP0010... / מדף ח 1322)..."
+        class="w-full p-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600"
+      ></textarea>
+
+      <div class="flex items-center justify-end gap-2">
+        <button type="button" data-close-modal="modalSmartParser" class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold cursor-pointer">
+          ביטול
+        </button>
+        <button id="btnParseAndAdd" type="button" class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs sm:text-sm font-bold shadow cursor-pointer">
+          פענח והוסף לרשימת המעקב
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 3: Manual Package Add / Edit -->
+  <div id="modalManualAdd" class="fixed inset-0 z-50 hidden bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-lg w-full max-h-[90vh] overflow-y-auto custom-scroll shadow-2xl border border-slate-200 p-6 space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <h2 class="text-lg font-black text-slate-900">הוספת חבילה חדשה למעקב</h2>
+        <button type="button" data-close-modal="modalManualAdd" class="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 cursor-pointer">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <form id="manualAddForm" class="space-y-3">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">שם המוצר / החבילה *</label>
+          <input id="addTitleInput" type="text" required placeholder="למשל: אוזניות Lenovo LP25 או משלוח מאוחד" class="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-sm" />
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">מספר מעקב / הזמנה *</label>
+            <input id="addTrackingInput" type="text" required dir="ltr" placeholder="RN0044168836Y" class="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-sm mono-num" />
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">קוד איסוף / מספר מדף (אם יש)</label>
+            <input id="addShelfInput" type="text" placeholder="למשל: ח 1322 או ג 4208" class="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-sm" />
+          </div>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">חנות / חברת שילוח</label>
+            <input id="addCourierInput" type="text" placeholder="AliExpress / דואר ישראל / צ'יטה" class="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-sm" />
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">סטטוס</label>
+            <select id="addStatusSelect" class="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-sm">
+              <option value="ready_for_pickup">מוכן לאיסוף!</option>
+              <option value="action_required">דורש בחירת נקודת איסוף</option>
+              <option value="arrived_il">הגיע לארץ</option>
+              <option value="in_transit" selected>בדרך / נשלח</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">כתובת יעד או נקודת איסוף</label>
+          <input id="addLocationInput" type="text" placeholder="פלאי בלינסון 2 חולון / הופיין 59 חולון" class="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-sm" />
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">קישור לתמונת מוצר מקורית (אופציונלי)</label>
+          <input id="addImageInput" type="url" dir="ltr" placeholder="https://ae-pic-a1.aliexpress-media.com/kf/..." class="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs mono-num" />
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">קישור ישיר למעקב / זימון תור</label>
+          <input id="addUrlInput" type="url" dir="ltr" placeholder="https://mypost.israelpost.co.il/..." class="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs mono-num" />
+        </div>
+
+        <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+          <button type="button" data-close-modal="modalManualAdd" class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold cursor-pointer">
+            ביטול
+          </button>
+          <button type="submit" class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs sm:text-sm font-bold shadow cursor-pointer">
+            שמור חבילה
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toastContainer" class="fixed bottom-5 left-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <script>
+    // ============================================================================
+    // PackTrack Pro v2.0 — Real Data Engine (Oct 25–28, 2026 from yitzhaki173@gmail.com)
+    // Storage Key v2 with Permanent Deletion Tombstones (`deletedIds`)
+    // ============================================================================
+    const STORAGE_KEY_V2 = 'packtrack_yitzhak_v2_permanent_state';
+
+    // Clean SVG Fallback Generator (only used if offline or no product photo exists)
+    function makeCleanBadgeSvg(label, bgHex) {
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160" viewBox="0 0 160 160">
+        <rect width="160" height="160" rx="24" fill="${bgHex}"/>
+        <text x="50%" y="54%" dominant-baseline="middle" text-anchor="middle" fill="#ffffff" font-family="Heebo, sans-serif" font-weight="800" font-size="22">${label}</text>
+      </svg>`;
+      return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
+    }
+
+    // All 11 Real Active Packages & Orders from Yitzhak's Gmail (Oct 25–28, 2026)
+    // Zero old Oct 12-18 orders. Zero AI fake images. Real AliExpress & Terminal X CDN URLs.
+    function getInitialGmailSeedPackages() {
+      return [
+        {
+          id: 'pkg_rn0044168836y',
+          trackingNumber: 'RN0044168836Y',
+          secondaryTracking: 'Order 1123468156599108 (+4)',
+          title: 'חבילה מאוחדת (5 מוצרים): משחקי קופסה Odin + Kariba + Scout, אוזניות Lenovo LP25 PRO (אפור + ורוד) וג׳ל ציפורניים KODI',
+          store: 'AliExpress • דואר ישראל',
+          courier: 'דואר ישראל',
+          status: 'ready_for_pickup',
+          shelfCode: 'ח 1322',
+          city: 'קרית שמונה',
+          pickupLocation: 'שמחה בעיר בע"מ (בית עסק), תל חי 106, קרית שמונה (יעד: הרצל 17/2)',
+          updatedAt: '28/10/2026 11:50',
+          priceText: 'חבילה מאוחדת (6 יח׳)',
+          mainImage: 'https://ae-pic-a1.aliexpress-media.com/kf/S718fd09d6ccb4d029c6dc81a27addaadF.jpg',
+          trackingUrl: 'https://mypost.israelpost.co.il/lp?itemcode=RN0044168836Y',
+          secondaryActionUrl: 'https://delivery.israelpost.co.il?TN=RN0044168836Y&PR=845292061',
+          secondaryActionLabel: 'אישור מסירה בדואר',
+          gmailUrl: 'https://mail.google.com/mail/?authuser=yitzhaki173@gmail.com#all/thread-f:1880286579206693187',
+          gmailUrlSecondary: 'https://mail.google.com/mail/?authuser=yitzhaki173@gmail.com#all/thread-f:1880285293248708951',
+          items: [
+            {
+              name: 'HOT Board Games Tucano | Kariba | Odin (SKU: Odin)',
+              sku: 'Odin • הזמנה 1123468156579108',
+              qty: 1,
+              img: 'https://ae-pic-a1.aliexpress-media.com/kf/S9e348ff80b434de393ed6238d335000f2.jpg'
+            },
+            {
+              name: 'Board Game KARIBA: Portable Small Card Game',
+              sku: 'KARIBA • הזמנה 1123468156599108',
+              qty: 1,
+              img: 'https://ae-pic-a1.aliexpress-media.com/kf/S2722654f79774283bc10a5f84b3d204cH.jpg'
+            },
+            {
+              name: 'Lenovo LP25 PRO Bluetooth 5.4 Headphones (Grey)',
+              sku: 'LP25 Grey • הזמנה 1123376113189108',
+              qty: 1,
+              img: 'https://ae-pic-a1.aliexpress-media.com/kf/S718fd09d6ccb4d029c6dc81a27addaadF.jpg'
+            },
+            {
+              name: 'Lenovo LP25 PRO Bluetooth 5.4 Headphones (Pink)',
+              sku: 'LP25 Pink • הזמנה 1123376113189108',
+              qty: 1,
+              img: 'https://ae-pic-a1.aliexpress-media.com/kf/S1e25e948423e4411ab968f2aaf77077cO.jpg'
+            },
+            {
+              name: 'KODI JYJ Latest Poly Nail Gel 30ml (KJ-CLEAR-01)',
+              sku: 'KJ-CLEAR-01 • הזמנה 1123376113239108',
+              qty: 1,
+              img: 'https://ae-pic-a1.aliexpress-media.com/kf/Saade1530ae5146dfbc8b0c08913ea228o.jpg'
+            },
+            {
+              name: 'Scout Card Game • Nine Tiles Panic • IN A Grove',
+              sku: 'IN A Grove • הזמנה 1123468156559108',
+              qty: 1,
+              img: 'https://ae-pic-a1.aliexpress-media.com/kf/Seb2d14dc73c9491d9b49194347f35743J.jpg'
+            }
+          ]
+        },
+        {
+          id: 'pkg_rs001214914s1',
+          trackingNumber: 'RS001214914S1',
+          secondaryTracking: 'Order 1123204530619108',
+          title: 'דבק דו-צדדי שקוף חזק 3cm x 3M (Transparent Seamless Double Sided Tape) — מוכן לאיסוף בחולון!',
+          store: 'AliExpress • דואר ישראל',
+          courier: 'דואר ישראל',
+          status: 'ready_for_pickup',
+          shelfCode: 'ג 4208',
+          city: 'חולון',
+          pickupLocation: 'פלאי (בית עסק), בלינסון 2, חולון',
+          updatedAt: '26/10/2026 11:19',
+          priceText: 'מוכן לאיסוף בחולון',
+          mainImage: 'https://ae-pic-a1.aliexpress-media.com/kf/S99a53db9bb5f4df6982ebd2033cadfa5m.jpg',
+          trackingUrl: 'https://mypost.israelpost.co.il/lp?itemcode=RS001214914S1',
+          secondaryActionUrl: 'https://delivery.israelpost.co.il?TN=RS001214914S1&PR=845117540',
+          secondaryActionLabel: 'אישור קבלת משלוח',
+          gmailUrl: 'https://mail.google.com/mail/?authuser=yitzhaki173@gmail.com#all/thread-f:1880103468813125780',
+          items: [
+            {
+              name: 'Transparent Seamless Double Sided Tape (Width 3cm, Length 3M)',
+              sku: 'הזמנה 1123204530619108',
+              qty: 1,
+              img: 'https://ae-pic-a1.aliexpress-media.com/kf/S99a53db9bb5f4df6982ebd2033cadfa5m.jpg'
+            }
+          ]
+        },
+        {
+          id: 'pkg_hrbc1142906358',
+          trackingNumber: 'HRBC1142906358',
+          secondaryTracking: 'Order 1123151449009108',
+          title: 'זוג סוללות נטענות 18V 5.0Ah + מטען תואם Makita BL1850B / BL1860',
+          store: 'AliExpress',
+          courier: 'נקודת איסוף מקומית',
+          status: 'ready_for_pickup',
+          shelfCode: 'מוכן בנקודת החלוקה',
+          city: 'קרית שמונה',
+          pickupLocation: 'נקודת חלוקה — הרצל 17/2, קרית שמונה',
+          updatedAt: '27/10/2026 03:01',
+          priceText: '2PCS 5.0Ah + Charger',
+          mainImage: 'https://ae-pic-a1.aliexpress-media.com/kf/S4faaab36cc914f5a849d6391a767221ac.jpg',
+          trackingUrl: 'https://www.aliexpress.com/p/tracking/index.html?_addShare=no&_login=yes&tradeOrderId=1123151449009108&trackingNumber=HRBC1142906358',
+          gmailUrl: 'https://mail.google.com/mail/?authuser=yitzhaki173@gmail.com#all/thread-f:1880162713455270665',
+          items: [
+            {
+              name: '100% Original Makita Battery 18V Rechargeable (2PCS-5.0Ah-charger)',
+              sku: '2PCS-5.0Ah-charger • הזמנה 1123151449009108',
+              qty: 1,
+              img: 'https://ae-pic-a1.aliexpress-media.com/kf/S4faaab36cc914f5a849d6391a767221ac.jpg'
+            }
+          ]
+        },
+        {
+          id: 'pkg_cn26102800029939',
+          trackingNumber: 'CN26102800029939',
+          secondaryTracking: 'Cheetah Delivery',
+          title: 'משלוח AliExpress דרך צ׳יטה שליחויות — נפתחה בחירת נקודת איסוף מועדפת!',
+          store: "AliExpress • צ'יטה",
+          courier: "צ'יטה שליחויות",
+          status: 'action_required',
+          shelfCode: 'בחר נקודת איסוף',
+          city: 'חולון',
+          pickupLocation: 'ממתין לבחירת נקודת מסירה בקישור של צ׳יטה שליחויות',
+          updatedAt: '28/10/2026 16:57',
+          priceText: 'דורש בחירת נקודה',
+          mainImage: 'https://ae-pic-a1.aliexpress-media.com/kf/Sf394014daaeb4d6eb4f648eb5b642203S.png',
+          trackingUrl: 'https://u.cheetahint.com/u7wveri',
+          gmailUrl: 'https://mail.google.com/mail/?authuser=yitzhaki173@gmail.com#all/thread-f:1880305909884012423',
+          items: [
+            {
+              name: 'חבילת AliExpress במשלוח צ׳יטה שליחויות (CN26102800029939)',
+              sku: 'קישור לבחירת חנות/לוקר איסוף',
+              qty: 1,
+              img: 'https://ae-pic-a1.aliexpress-media.com/kf/Sf394014daaeb4d6eb4f648eb5b642203S.png'
+            }
+          ]
+        },
+        {
+          id: 'pkg_rn0044085386y',
+          trackingNumber: 'RN0044085386Y',
+          secondaryTracking: 'AP00847709525827',
+          title: 'זוג בוכנות גז לתא מטען ניסאן מיקרה (Nissan Micra K13 2010–2017 Boot Gas Struts)',
+          store: 'AliExpress • דואר ישראל',
+          courier: 'דואר ישראל',
+          status: 'arrived_il',
+          shelfCode: 'הגיע לארץ • במיון',
+          city: 'קרית שמונה',
+          pickupLocation: 'נאסף ע"י דואר ישראל ובדרכו לנקודת החלוקה (הרצל 17/2 קרית שמונה)',
+          updatedAt: '26/10/2026 21:20',
+          priceText: '2pcs Gas Struts',
+          mainImage: 'https://ae-pic-a1.aliexpress-media.com/kf/S18bbd2e64fa947559ffd9c9651cefc9eg.jpg',
+          trackingUrl: 'https://www.aliexpress.com/p/tracking/index.html?_addShare=no&_login=yes&tradeOrderId=1123376113149108&trackingNumber=AP00847709525827',
+          gmailUrl: 'https://mail.google.com/mail/?authuser=yitzhaki173@gmail.com#all/thread-f:1880141283645560775',
+          gmailUrlSecondary: 'https://mail.google.com/mail/?authuser=yitzhaki173@gmail.com#all/thread-f:1880140702978584850',
+          items: [
+            {
+              name: 'For Nissan Micra Boot Hatch K13 2010-2017 Gas Struts (Black Carbon, 2pcs)',
+              sku: 'הזמנה 1123376113149108 • מעקב AP00847709525827',
+              qty: 1,
+              img: 'https://ae-pic-a1.aliexpress-media.com/kf/S18bbd2e64fa947559ffd9c9651cefc9eg.jpg'
+            }
+          ]
+        },
+        {
+          id: 'pkg_rs0010172511h',
+          trackingNumber: 'RS0010172511H',
+          secondaryTracking: 'Order 1123122672529108',
+          title: 'מפתח אימפקט אלחוטי בראשלס ONEVAN 1000N.m / 600N.m תואם סוללת Makita 18V',
+          store: 'AliExpress • דואר ישראל',
+          courier: 'דואר ישראל',
+          status: 'arrived_il',
+          shelfCode: 'הגיע לארץ • בדרך אליך',
+          city: 'חולון',
+          pickupLocation: 'הגיע לישראל ונאסף ע"י דואר ישראל לקראת מסירה',
+          updatedAt: '25/10/2026 14:48',
+          priceText: 'Brushless Impact Wrench',
+          mainImage: 'https://ae-pic-a1.aliexpress-media.com/kf/S9f9bf2a418534124b16e2057f1d1b72dV.jpg',
+          trackingUrl: 'https://doar.israelpost.co.il/deliverytracking?itemcode=RS0010172511H',
+          gmailUrl: 'https://mail.google.com/mail/?authuser=yitzhaki173@gmail.com#all/thread-f:1880026017891891049',
+          items: [
+            {
+              name: 'ONEVAN 1000N.m / 600N.m Brushless Electric Impact Wrench 1/2 Inch',
+              sku: 'הזמנה 1123122672529108',
+              qty: 1,
+              img: 'https://ae-pic-a1.aliexpress-media.com/kf/S9f9bf2a418534124b16e2057f1d1b72dV.jpg'
+            }
+          ]
+        },
+        {
+          id: 'pkg_ap00100102330132',
+          trackingNumber: 'AP00100102330132',
+          secondaryTracking: 'Order 1123524524559108 (+4)',
+          title: 'חבילה מאוחדת (5 מוצרי אלקטרוניקה ו-RF): מודולי CC1101 433MHz, מפצל ORICO USB-C 3.2 10Gbps, מקלטי ומשדרי אינפרא-אדום TSOP4838 / TSMP96000',
+          store: 'AliExpress',
+          courier: 'AliExpress Standard (משלוח מאוחד)',
+          status: 'in_transit',
+          shelfCode: 'יצא ממדינת המוצא',
+          city: 'חולון',
+          pickupLocation: 'משלוח לכתובת: הופיין 59, חולון',
+          updatedAt: '28/10/2026 22:02',
+          priceText: 'חבילה מאוחדת (8 יח׳)',
+          mainImage: 'https://ae-pic-a1.aliexpress-media.com/kf/S7f44932386f74994b3a53561958e5778q.jpg',
+          trackingUrl: 'https://www.aliexpress.com/p/tracking/index.html?_addShare=no&_login=yes&tradeOrderId=1123524524559108',
+          gmailUrl: 'https://mail.google.com/mail/?authuser=yitzhaki173@gmail.com#all/thread-f:1880332639032435257',
+          items: [
+            {
+              name: 'ORICO Type C USB 3.2 10Gbps Hub 4 Ports PD (0.15M Gray)',
+              sku: 'הזמנה 1123524524599108',
+              qty: 1,
+              img: 'https://ae-pic-a1.aliexpress-media.com/kf/S7f44932386f74994b3a53561958e5778q.jpg'
+            },
+            {
+              name: '433MHz CC1101 Wireless RF Transceiver Module E07',
+              sku: 'הזמנה 1123524524559108',
+              qty: 2,
+              img: 'https://ae-pic-a1.aliexpress-media.com/kf/Scb85e36c7a3348f9bf2a6882ff0a80a0h.jpg'
+            },
+            {
+              name: 'Original TSOP4838 P4838 IR Infrared Receiver 38KHz (5PCS)',
+              sku: 'הזמנה 1123524524519108',
+              qty: 2,
+              img: 'https://ae-pic-a1.aliexpress-media.com/kf/Se25dbc4710ed402f9ea25c3a3d88afcfd.jpg'
+            },
+            {
+              name: 'LED Infrared Remote Control Transmitter Module 3W',
+              sku: 'הזמנה 1123524524539108',
+              qty: 2,
+              img: 'https://ae-pic-a1.aliexpress-media.com/kf/S7c7bb8dceca842eca71b1d26bdd85e87b.jpg'
+            },
+            {
+              name: 'TSMP96000 Code Learning Infrared Receiving Sensor (2PCS)',
+              sku: 'הזמנה 1123524524579108',
+              qty: 1,
+              img: 'https://ae-pic-a1.aliexpress-media.com/kf/Sd6eb7e1f6af345baa800556214f2e0b1Z.jpg'
+            }
+          ]
+        },
+        {
+          id: 'pkg_rn0044679306y',
+          trackingNumber: 'RN0044679306Y',
+          secondaryTracking: 'LP00851321564645 / AP00100089528018',
+          title: 'חבילה מאוחדת (5 פריטים): סט בוקסות וראצ׳ט 46 חלקים 1/4", גלילי שקיות ואקום למזון ו-3 חפיסות קלפי פוקר PVC עמידים למים',
+          store: 'AliExpress • דואר ישראל',
+          courier: 'דואר ישראל',
+          status: 'in_transit',
+          shelfCode: 'המריא לישראל',
+          city: 'חולון',
+          pickupLocation: 'משלוח לכתובת: הופיין 59, חולון',
+          updatedAt: '27/10/2026 19:35',
+          priceText: 'חבילה מאוחדת (5 יח׳)',
+          mainImage: 'https://ae-pic-a1.aliexpress-media.com/kf/Se44d40d4f06f4876902db983cf5f5ec5s.png',
+          trackingUrl: 'https://www.aliexpress.com/p/tracking/index.html?_addShare=no&_login=yes&tradeOrderId=1123489722649108',
+          gmailUrl: 'https://mail.google.com/mail/?authuser=yitzhaki173@gmail.com#all/thread-f:1880225239855643625',
+          items: [
+            {
+              name: '46pc Drive Socket Set 1/4 Inch Ratchet Wrench Set (46pcs-P)',
+              sku: 'הזמנה 1123489722499108',
+              qty: 1,
+              img: 'https://ae-pic-a1.aliexpress-media.com/kf/Se44d40d4f06f4876902db983cf5f5ec5s.png'
+            },
+            {
+              name: 'saengQ Vacuum Sealer Bags for Food (20cm Width Rolls)',
+              sku: 'הזמנה 1123489722649108',
+              qty: 1,
+              img: 'https://ae-pic-a1.aliexpress-media.com/kf/S15eea10fd4054795a780fd94ead84fa1f.jpg'
+            },
+            {
+              name: 'Classic Stylish Poker Card Game (Refraction Edition)',
+              sku: 'הזמנה 1123489722579108',
+              qty: 1,
+              img: 'https://ae-pic-a1.aliexpress-media.com/kf/Sb307b32cfdde4eff94ff5cee3850f7d3u.jpg'
+            },
+            {
+              name: 'Waterproof PVC Plastic Playing Cards (Red Box)',
+              sku: 'הזמנה 1123489722599108',
+              qty: 1,
+              img: 'https://ae-pic-a1.aliexpress-media.com/kf/S4edad61ec0a94b4cb8e5f2d4ec634674V.jpg'
+            },
+            {
+              name: 'Waterproof PVC Plastic Playing Cards (Blue Box)',
+              sku: 'הזמנה 1123489722599108',
+              qty: 1,
+              img: 'https://ae-pic-a1.aliexpress-media.com/kf/Sf6d10e9e37414623b1d7486fe1ef54142.jpg'
+            }
+          ]
+        },
+        {
+          id: 'pkg_terminalx_035381802',
+          trackingNumber: '035381802',
+          secondaryTracking: 'TERMINAL X • שליח עד הבית',
+          title: 'הזמנת TERMINAL X (3 פריטים): נעלי כדורגל NIKE PHANTOM 6 + נעלי NIKE MERCURIAL SUPERFLY 9 + מיקרוגל דיגיטלי 23 ליטר MIDEA',
+          store: 'TERMINAL X',
+          courier: 'שליח עד הבית (Terminal X)',
+          status: 'in_transit',
+          shelfCode: 'שליח עד הבית',
+          city: 'חולון',
+          pickupLocation: 'שליח עד הבית: הופיין 59, חולון',
+          updatedAt: '27/10/2026 21:42',
+          priceText: '831.26 ₪ (שולם בנקודות DREAM CARD)',
+          mainImage: 'https://media.terminalx.com/pub/media/resized/100_133/catalog/product/r/6/r663240001-11769517605.jpg',
+          trackingUrl: 'https://www.terminalx.com',
+          gmailUrl: 'https://mail.google.com/mail/?authuser=yitzhaki173@gmail.com#all/thread-f:1880233247380770973',
+          items: [
+            {
+              name: 'נעלי כדורגל NIKE PHANTOM 6 HIGH ACAD FG MG (כחול כהה, מידה 42.5)',
+              sku: 'מק"ט R66324000105 • 342.93 ₪',
+              qty: 1,
+              img: 'https://media.terminalx.com/pub/media/resized/100_133/catalog/product/r/6/r663240001-11769517605.jpg'
+            },
+            {
+              name: 'נעלי ספורט NIKE MERCURIAL SUPERFLY 9 CLUB (לבן, מידה 43)',
+              sku: 'מק"ט R87206000106 • 209.93 ₪',
+              qty: 1,
+              img: 'https://media.terminalx.com/pub/media/resized/100_133/catalog/product/r/8/r872060001-11776241839.jpg'
+            },
+            {
+              name: 'מיקרוגל 23 ליטר דיגיטלי MIDEA EM823A2GU (כסף)',
+              sku: 'מק"ט R50904000501 • 343.20 ₪',
+              qty: 1,
+              img: 'https://media.terminalx.com/pub/media/resized/100_133/catalog/product/r/5/r509040005-11762421703.jpg'
+            }
+          ]
+        },
+        {
+          id: 'pkg_4px3003314040684cn',
+          trackingNumber: '4PX3003314040684CN',
+          secondaryTracking: 'RTL-SDR Order #67456',
+          title: 'מקלט רדיו תוכנה מקורי RTL-SDR Blog V3 R860 (R820T2) RTL2832U 1PPM TCXO SMA + ערכת אנטנת דיפול',
+          store: 'RTL-SDR.com',
+          courier: '4PX / China Post Registered',
+          status: 'in_transit',
+          shelfCode: 'נשלח ב-4PX',
+          city: 'חולון',
+          pickupLocation: 'משלוח לכתובת: אליעזר הופיין 59, חולון',
+          updatedAt: '27/10/2026 04:19',
+          priceText: '$44.95 USD',
+          mainImage: 'https://www.rtl-sdr.com/wp-content/uploads/ast-shipping-providers/4px.png?v=4.0.4',
+          trackingUrl: 'https://track.4px.com/#/result/0/4PX3003314040684CN',
+          gmailUrl: 'https://mail.google.com/mail/?authuser=yitzhaki173@gmail.com#all/thread-f:1880242356125973412',
+          items: [
+            {
+              name: 'RTL-SDR Blog V3 R860 (R820T2) RTL2832U 1PPM TCXO SMA Software Defined Radio with Dipole Antenna Kit',
+              sku: 'הזמנה #67456 • מעקב 4PX3003314040684CN',
+              qty: 1,
+              img: 'https://www.rtl-sdr.com/wp-content/uploads/ast-shipping-providers/4px.png?v=4.0.4'
+            }
+          ]
+        },
+        {
+          id: 'pkg_ali_shipped_batch_oct26',
+          trackingNumber: '1123524524619108',
+          secondaryTracking: '6 הזמנות בודדות שנשלחו ב-26/10',
+          title: '6 הזמנות AliExpress נוספות שנשלחו לחולון: זוג בקרי ESP32-S3 N16R8, סט מברגים 55 ב-1 VMAN, קומפרסור אלחוטי לרכב, קלפי Black Gold, מטבעות לעגלת סופר ורשת אחסון',
+          store: 'AliExpress',
+          courier: 'AliExpress Shipping',
+          status: 'in_transit',
+          shelfCode: 'נשלח (6 חבילות)',
+          city: 'חולון',
+          pickupLocation: 'משלוח לכתובת: הופיין 59, חולון',
+          updatedAt: '26/10/2026 23:44',
+          priceText: '$65.50 סה"כ',
+          mainImage: 'https://ae-pic-a1.aliexpress-media.com/kf/Sdcac3d51a6c84a9884e10cb5a937d96cS.jpg',
+          trackingUrl: 'https://www.aliexpress.com/p/order/detail.html?orderId=1123524524619108',
+          gmailUrl: 'https://mail.google.com/mail/?authuser=yitzhaki173@gmail.com#all/thread-f:1880151817409816208',
+          items: [
+            {
+              name: 'ESP32-S3-DevKitC-1 N16R8 Development Board WiFi + Bluetooth MCU (KIT C)',
+              sku: 'הזמנה 1123524524619108 • $17.39',
+              qty: 2,
+              img: 'https://ae-pic-a1.aliexpress-media.com/kf/Sdcac3d51a6c84a9884e10cb5a937d96cS.jpg'
+            },
+            {
+              name: 'VMAN 55 In 1 Magnetic Precision Screwdriver Set (55in1 Black)',
+              sku: 'הזמנה 1123489722519108 • $25.46',
+              qty: 1,
+              img: 'https://ae-pic-a1.aliexpress-media.com/kf/Sf394014daaeb4d6eb4f648eb5b642203S.png'
+            },
+            {
+              name: 'Portable Wireless Car Air Pump Compressor (Black Wireless)',
+              sku: 'הזמנה 1123489722539108 • $10.09',
+              qty: 1,
+              img: 'https://ae-pic-a1.aliexpress-media.com/kf/S72ac8aac2dc04b7b8611eee3f0d126f3a.jpg'
+            },
+            {
+              name: 'Premium Black Gold Foil Waterproof Playing Cards',
+              sku: 'הזמנה 1123489722669108 • $9.14',
+              qty: 1,
+              img: 'https://ae-pic-a1.aliexpress-media.com/kf/S740dd108d3dc4664b9af0ea6d6aaf0ffd.png'
+            },
+            {
+              name: '2pcs Stainless Steel Supermarket Trolley Tokens Keychain',
+              sku: 'הזמנה 1123489722559108 • $1.81',
+              qty: 1,
+              img: 'https://ae-pic-a1.aliexpress-media.com/kf/S0434a7501fe840efb84c3339b867976dH.jpg'
+            },
+            {
+              name: 'Wall Mount Plastic Bag Holder Mesh Hanging Garbage Storage Dispenser',
+              sku: 'הזמנה 1123489722629108 • $1.61',
+              qty: 1,
+              img: 'https://ae-pic-a1.aliexpress-media.com/kf/Seb1dfb55aef143dfa3f320faacdb26efH.jpg'
+            }
+          ]
+        }
+      ];
+    }
+
+    // ============================================================================
+    // State Management with Permanent Tombstone Engine (`deletedIds`)
+    // ============================================================================
+    let appState = {
+      initialized: true,
+      packages: [],
+      deletedIds: [], // Set of permanently deleted package IDs or tracking numbers so they NEVER come back on refresh!
+      gasWebhookUrl: '',
+      activeTab: 'all',
+      searchQuery: '',
+      cityFilter: 'all',
+      storeFilter: 'all',
+      bulkMode: false,
+      selectedIds: []
+    };
+
+    function loadStateFromStorage() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY_V2);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed && parsed.initialized === true && Array.isArray(parsed.packages)) {
+            appState.packages = parsed.packages;
+            appState.deletedIds = Array.isArray(parsed.deletedIds) ? parsed.deletedIds : [];
+            appState.gasWebhookUrl = parsed.gasWebhookUrl || '';
+            return;
+          }
+        }
+      } catch (err) {
+        console.warn('Storage read fallback:', err);
+      }
+      // First load of v2.0: initialize with clean Oct 25-28 Gmail packages
+      appState.packages = getInitialGmailSeedPackages();
+      appState.deletedIds = [];
+      saveStateToStorage();
+    }
+
+    function saveStateToStorage() {
+      try {
+        const payload = {
+          initialized: true,
+          packages: appState.packages,
+          deletedIds: appState.deletedIds,
+          gasWebhookUrl: appState.gasWebhookUrl,
+          savedAt: new Date().toISOString()
+        };
+        localStorage.setItem(STORAGE_KEY_V2, JSON.stringify(payload));
+      } catch (err) {
+        console.warn('Storage write warning:', err);
+      }
+    }
+
+    // Toast Helper
+    function showToast(message, type = 'success') {
+      const container = document.getElementById('toastContainer');
+      if (!container) return;
+      const el = document.createElement('div');
+      const colors = {
+        success: 'bg-slate-900 text-white border-emerald-500',
+        warning: 'bg-amber-950 text-amber-100 border-amber-500',
+        danger: 'bg-rose-950 text-rose-100 border-rose-500'
+      };
+      el.className = `pointer-events-auto px-4 py-3 rounded-2xl border-r-4 shadow-xl text-xs sm:text-sm font-bold flex items-center gap-2.5 transition-all duration-200 ${colors[type] || colors.success}`;
+      el.innerHTML = `<span>${message}</span>`;
+      container.appendChild(el);
+      setTimeout(() => {
+        el.style.opacity = '0';
+        setTimeout(() => el.remove(), 220);
+      }, 3400);
+    }
+
+    // Copy to Clipboard Helper (with fallback)
+    function copyTextToClipboard(text, label) {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(() => {
+          showToast(`הועתק ללוח: ${label} (${text})`);
+        }).catch(() => fallbackCopy(text, label));
+      } else {
+        fallbackCopy(text, label);
+      }
+    }
+
+    function fallbackCopy(text, label) {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      try {
+        document.execCommand('copy');
+        showToast(`הועתק ללוח: ${label}`);
+      } catch (e) {
+        showToast('לא ניתן להעתיק אוטומטית', 'warning');
+      }
+      document.body.removeChild(ta);
+    }
+
+    // ============================================================================
+    // Package Operations (Permanent Delete, Archive, Restore, Add)
+    // ============================================================================
+    function deletePackagePermanently(pkgId) {
+      const target = appState.packages.find(p => p.id === pkgId);
+      if (!target) return;
+      if (!appState.deletedIds.includes(target.id)) {
+        appState.deletedIds.push(target.id);
+      }
+      if (target.trackingNumber && !appState.deletedIds.includes(target.trackingNumber)) {
+        appState.deletedIds.push(target.trackingNumber);
+      }
+      appState.packages = appState.packages.filter(p => p.id !== pkgId);
+      appState.selectedIds = appState.selectedIds.filter(id => id !== pkgId);
+      saveStateToStorage();
+      renderAll();
+      showToast(`ההזמנה ${target.trackingNumber} נמחקה לצמיתות ולא תחזור ברענון!`, 'danger');
+    }
+
+    function toggleArchiveStatus(pkgId) {
+      const pkg = appState.packages.find(p => p.id === pkgId);
+      if (!pkg) return;
+      if (pkg.status === 'archived') {
+        pkg.status = 'in_transit';
+        showToast(`ההזמנה ${pkg.trackingNumber} הוחזרה לרשימה הפעילה`);
+      } else {
+        pkg.status = 'archived';
+        showToast(`ההזמנה ${pkg.trackingNumber} סומנה כ"נאסף" והועברה לארכיון!`);
+      }
+      saveStateToStorage();
+      renderAll();
+    }
+
+    function restoreAllFromSeed() {
+      appState.deletedIds = [];
+      appState.packages = getInitialGmailSeedPackages();
+      appState.selectedIds = [];
+      appState.activeTab = 'all';
+      saveStateToStorage();
+      renderAll();
+      showToast('כל 11 ההזמנות הפעילות מהמייל (אוקטובר 2026) שוחזרו בהצלחה!');
+    }
+
+    function clearAllPackagesPermanently() {
+      appState.packages.forEach(p => {
+        if (!appState.deletedIds.includes(p.id)) appState.deletedIds.push(p.id);
+        if (p.trackingNumber && !appState.deletedIds.includes(p.trackingNumber)) {
+          appState.deletedIds.push(p.trackingNumber);
+        }
+      });
+      appState.packages = [];
+      appState.selectedIds = [];
+      saveStateToStorage();
+      renderAll();
+      showToast('כל ההזמנות נמחקו לצמיתות. הרשימה תישאר ריקה גם אחרי סגירה ורענון!', 'danger');
+    }
+
+    // ============================================================================
+    // Status Badge Helpers
+    // ============================================================================
+    function getStatusConfig(status) {
+      switch (status) {
+        case 'ready_for_pickup':
+          return {
+            label: 'מוכן לאיסוף כעת!',
+            badgeClass: 'bg-emerald-600 text-white shadow-xs',
+            cardExtraClass: 'pickup-glow',
+            icon: 'map-pin-check'
+          };
+        case 'action_required':
+          return {
+            label: 'דורש בחירת נקודת איסוף!',
+            badgeClass: 'bg-amber-500 text-slate-950 font-black',
+            cardExtraClass: 'action-glow',
+            icon: 'alert-triangle'
+          };
+        case 'arrived_il':
+          return {
+            label: 'הגיע לארץ • בדואר ישראל',
+            badgeClass: 'bg-sky-600 text-white',
+            cardExtraClass: '',
+            icon: 'plane-landing'
+          };
+        case 'in_transit':
+          return {
+            label: 'בדרך / נשלח',
+            badgeClass: 'bg-indigo-600 text-white',
+            cardExtraClass: '',
+            icon: 'truck'
+          };
+        case 'archived':
+          return {
+            label: 'נאסף / בארכיון',
+            badgeClass: 'bg-slate-500 text-white',
+            cardExtraClass: 'opacity-80',
+            icon: 'check-circle-2'
+          };
+        default:
+          return {
+            label: 'במעקב',
+            badgeClass: 'bg-slate-700 text-white',
+            cardExtraClass: '',
+            icon: 'package'
+          };
+      }
+    }
+
+    // ============================================================================
+    // Rendering KPIs, Tabs, and Package Cards
+    // ============================================================================
+    function getFilteredPackages() {
+      const q = appState.searchQuery.trim().toLowerCase();
+      return appState.packages.filter(pkg => {
+        // Status tab filter
+        if (appState.activeTab === 'all') {
+          if (pkg.status === 'archived') return false;
+        } else if (pkg.status !== appState.activeTab) {
+          return false;
+        }
+
+        // City filter
+        if (appState.cityFilter !== 'all') {
+          const cityStr = `${pkg.city || ''} ${pkg.pickupLocation || ''}`;
+          if (!cityStr.includes(appState.cityFilter)) return false;
+        }
+
+        // Store filter
+        if (appState.storeFilter !== 'all') {
+          const storeStr = `${pkg.store || ''} ${pkg.courier || ''}`;
+          if (!storeStr.toLowerCase().includes(appState.storeFilter.toLowerCase())) return false;
+        }
+
+        // Search query filter
+        if (q) {
+          const itemsText = (pkg.items || []).map(i => `${i.name} ${i.sku}`).join(' ');
+          const haystack = `${pkg.trackingNumber} ${pkg.secondaryTracking || ''} ${pkg.title} ${pkg.shelfCode || ''} ${pkg.pickupLocation || ''} ${pkg.store || ''} ${itemsText}`.toLowerCase();
+          if (!haystack.includes(q)) return false;
+        }
+
+        return true;
+      });
+    }
+
+    function renderKPIs() {
+      const activeList = appState.packages.filter(p => p.status !== 'archived');
+      const totalItemsCount = activeList.reduce((acc, p) => {
+        const count = Array.isArray(p.items) ? p.items.reduce((s, it) => s + (Number(it.qty) || 1), 0) : 1;
+        return acc + count;
+      }, 0);
+
+      const readyCount = appState.packages.filter(p => p.status === 'ready_for_pickup').length;
+      const actionCount = appState.packages.filter(p => p.status === 'action_required').length;
+      const arrivedCount = appState.packages.filter(p => p.status === 'arrived_il').length;
+      const transitCount = appState.packages.filter(p => p.status === 'in_transit').length;
+      const archivedCount = appState.packages.filter(p => p.status === 'archived').length;
+
+      document.getElementById('kpiTotalActive').textContent = String(activeList.length);
+      document.getElementById('kpiTotalItemsSub').textContent = `${totalItemsCount} מוצרים בפנים`;
+      document.getElementById('kpiReadyPickup').textContent = String(readyCount);
+      document.getElementById('kpiActionRequired').textContent = String(actionCount);
+      document.getElementById('kpiArrivedIL').textContent = String(arrivedCount);
+      document.getElementById('kpiInTransit').textContent = String(transitCount);
+      document.getElementById('kpiArchived').textContent = String(archivedCount);
+
+      // Update Tab counts
+      const tabButtons = document.querySelectorAll('.status-tab');
+      tabButtons.forEach(btn => {
+        const tab = btn.getAttribute('data-tab');
+        const isActive = appState.activeTab === tab;
+        if (tab === 'all') btn.textContent = `הכל פעיל (${activeList.length})`;
+        if (tab === 'ready_for_pickup') btn.textContent = `מוכן לאיסוף (${readyCount})`;
+        if (tab === 'action_required') btn.textContent = `דורש בחירת נקודה (${actionCount})`;
+        if (tab === 'arrived_il') btn.textContent = `הגיע לארץ (${arrivedCount})`;
+        if (tab === 'in_transit') btn.textContent = `בדרך / נשלח (${transitCount})`;
+        if (tab === 'archived') btn.textContent = `ארכיון / נאספו (${archivedCount})`;
+
+        if (isActive) {
+          btn.className = 'status-tab px-3.5 py-1.5 rounded-xl text-xs font-bold bg-slate-900 text-white shadow-sm whitespace-nowrap cursor-pointer';
+        } else {
+          btn.className = 'status-tab px-3.5 py-1.5 rounded-xl text-xs font-bold bg-slate-100 text-slate-700 hover:bg-slate-200 whitespace-nowrap cursor-pointer';
+        }
+      });
+
+      // Highlight KPI card
+      document.querySelectorAll('.kpi-card').forEach(card => {
+        const f = card.getAttribute('data-kpi-filter');
+        if (f === appState.activeTab) {
+          card.classList.add('ring-2', 'ring-indigo-600');
+        } else {
+          card.classList.remove('ring-2', 'ring-indigo-600');
+        }
+      });
+
+      // Urgent Banner visibility
+      const urgentBanner = document.getElementById('urgentBannerSection');
+      if (urgentBanner) {
+        urgentBanner.style.display = (readyCount + actionCount > 0) ? 'block' : 'none';
+      }
+    }
+
+    function renderPackagesGrid() {
+      const container = document.getElementById('packagesContainer');
+      const emptyBox = document.getElementById('emptyStateBox');
+      const filtered = getFilteredPackages();
+
+      // Bulk bar visibility
+      const bulkBar = document.getElementById('bulkActionBar');
+      if (appState.bulkMode || appState.selectedIds.length > 0) {
+        bulkBar.classList.remove('hidden');
+        document.getElementById('bulkSelectedCount').textContent = String(appState.selectedIds.length);
+      } else {
+        bulkBar.classList.add('hidden');
+      }
+
+      if (filtered.length === 0) {
+        container.innerHTML = '';
+        emptyBox.classList.remove('hidden');
+        return;
+      }
+
+      emptyBox.classList.add('hidden');
+      const fallbackSvg = makeCleanBadgeSvg('PackTrack', '#4f46e5');
+
+      container.innerHTML = filtered.map(pkg => {
+        const cfg = getStatusConfig(pkg.status);
+        const isSelected = appState.selectedIds.includes(pkg.id);
+        const itemsList = Array.isArray(pkg.items) ? pkg.items : [];
+        const hasMultipleItems = itemsList.length > 1;
+
+        return `
+          <article class="card-elevated ${cfg.cardExtraClass} rounded-3xl p-4 sm:p-5 flex flex-col justify-between gap-4 relative transition" data-pkg-id="${pkg.id}">
+            <!-- Top Row: Bulk Checkbox + Status Badge + Store + Delete Button -->
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <div class="flex items-center gap-2">
+                ${appState.bulkMode ? `
+                  <input
+                    type="checkbox"
+                    data-select-pkg="${pkg.id}"
+                    ${isSelected ? 'checked' : ''}
+                    class="w-5 h-5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                  />
+                ` : ''}
+                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${cfg.badgeClass}">
+                  <i data-lucide="${cfg.icon}" class="w-3.5 h-3.5"></i>
+                  <span>${cfg.label}</span>
+                </span>
+                <span class="px-2.5 py-0.5 rounded-lg bg-slate-100 text-slate-700 text-xs font-bold">
+                  ${pkg.store || pkg.courier}
+                </span>
+                ${pkg.city ? `
+                  <span class="px-2 py-0.5 rounded-lg bg-indigo-50 text-indigo-700 text-[11px] font-bold">
+                    ${pkg.city}
+                  </span>
+                ` : ''}
+              </div>
+
+              <!-- Quick Card Controls: Mark Collected + Permanent Delete -->
+              <div class="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  data-archive-pkg="${pkg.id}"
+                  title="${pkg.status === 'archived' ? 'החזר לפעילות' : 'סמן כנאסף והעבר לארכיון'}"
+                  class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold transition cursor-pointer"
+                >
+                  <i data-lucide="check" class="w-3.5 h-3.5"></i>
+                  <span>${pkg.status === 'archived' ? 'החזר' : 'נאסף'}</span>
+                </button>
+                <button
+                  type="button"
+                  data-delete-pkg="${pkg.id}"
+                  title="מחק הזמנה זו לצמיתות (לא תחזור ברענון)"
+                  class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-600 text-rose-700 hover:text-white text-xs font-bold transition cursor-pointer"
+                >
+                  <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                  <span>מחק</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Middle Row: Real Product Image + Title + Tracking + Shelf Code -->
+            <div class="flex items-start gap-3.5">
+              <a href="${pkg.trackingUrl || '#'}" target="_blank" rel="noopener noreferrer" class="shrink-0 group relative">
+                <img
+                  src="${pkg.mainImage || fallbackSvg}"
+                  alt="${pkg.title}"
+                  onerror="this.onerror=null;this.src='${fallbackSvg}';"
+                  class="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl object-cover border border-slate-200 bg-white shadow-xs group-hover:scale-105 transition"
+                />
+                ${hasMultipleItems ? `
+                  <span class="absolute -bottom-1.5 -right-1.5 px-2 py-0.5 rounded-full bg-slate-900 text-white text-[10px] font-black shadow">
+                    ${itemsList.length} מוצרים
+                  </span>
+                ` : ''}
+              </a>
+
+              <div class="flex-1 min-w-0 space-y-2">
+                <h3 class="text-sm sm:text-base font-extrabold text-slate-900 leading-snug">
+                  ${pkg.title}
+                </h3>
+
+                <!-- Tracking Number + Shelf Code Pills -->
+                <div class="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    data-copy-text="${pkg.trackingNumber}"
+                    data-copy-label="מספר מעקב"
+                    class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold mono-num cursor-pointer"
+                    title="לחץ להעתקת מספר המעקב"
+                  >
+                    <i data-lucide="copy" class="w-3 h-3 text-slate-500"></i>
+                    <span>${pkg.trackingNumber}</span>
+                  </button>
+
+                  ${pkg.shelfCode ? `
+                    <button
+                      type="button"
+                      data-copy-text="${pkg.shelfCode}"
+                      data-copy-label="קוד איסוף / מדף"
+                      class="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl ${pkg.status === 'ready_for_pickup' ? 'bg-amber-400 text-slate-950 font-black shadow-xs' : 'bg-indigo-50 text-indigo-800 font-bold'} text-xs cursor-pointer"
+                    >
+                      <i data-lucide="key-round" class="w-3.5 h-3.5"></i>
+                      <span>מדף / סטטוס: ${pkg.shelfCode}</span>
+                    </button>
+                  ` : ''}
+                </div>
+
+                <!-- Location & Timestamp -->
+                <div class="text-xs text-slate-600 space-y-0.5">
+                  <div class="flex items-center gap-1.5 font-medium text-slate-700">
+                    <i data-lucide="map-pin" class="w-3.5 h-3.5 text-slate-400 shrink-0"></i>
+                    <span>${pkg.pickupLocation || 'לא צוין מיקום'}</span>
+                  </div>
+                  <div class="flex items-center gap-3 text-[11px] text-slate-400">
+                    <span>עודכן במייל: ${pkg.updatedAt || 'אוקטובר 2026'}</span>
+                    ${pkg.priceText ? `<span>• ${pkg.priceText}</span>` : ''}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Multi-Item Breakdown Gallery (Real Photos from AliExpress / Terminal X) -->
+            ${itemsList.length > 0 ? `
+              <div class="bg-slate-50/90 border border-slate-200/80 rounded-2xl p-3 space-y-2">
+                <div class="flex items-center justify-between text-xs font-bold text-slate-700">
+                  <span>פירוט המוצרים בחבילה (${itemsList.length} פריטים עם תמונות מקוריות מהמייל):</span>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-56 overflow-y-auto custom-scroll pr-0.5">
+                  ${itemsList.map(item => `
+                    <div class="flex items-center gap-2.5 bg-white p-2 rounded-xl border border-slate-200/70">
+                      <img
+                        src="${item.img || pkg.mainImage || fallbackSvg}"
+                        alt="${item.name}"
+                        onerror="this.onerror=null;this.src='${fallbackSvg}';"
+                        class="w-11 h-11 rounded-lg object-cover border border-slate-100 shrink-0 bg-slate-50"
+                      />
+                      <div class="min-w-0 flex-1">
+                        <p class="text-xs font-bold text-slate-800 truncate" title="${item.name}">${item.name}</p>
+                        <p class="text-[11px] text-slate-500 truncate">${item.sku || ''} ${item.qty > 1 ? `• כמות: ×${item.qty}` : ''}</p>
+                      </div>
+                    </div>
+                  `).join('')}
+                </div>
+              </div>
+            ` : ''}
+
+            <!-- Bottom Action Links Row -->
+            <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-100">
+              <div class="flex flex-wrap items-center gap-2">
+                ${pkg.trackingUrl ? `
+                  <a
+                    href="${pkg.trackingUrl}"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold ${pkg.status === 'ready_for_pickup' ? 'bg-emerald-600 hover:bg-emerald-500 text-white' : pkg.status === 'action_required' ? 'bg-amber-500 hover:bg-amber-400 text-slate-950' : 'bg-slate-900 hover:bg-slate-800 text-white'} transition shadow-2xs"
+                  >
+                    <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+                    <span>${pkg.status === 'ready_for_pickup' ? 'פרטי איסוף / זימון תור' : pkg.status === 'action_required' ? 'בחר נקודת איסוף בצ׳יטה' : 'מעקב משלוח חי'}</span>
+                  </a>
+                ` : ''}
+
+                ${pkg.secondaryActionUrl ? `
+                  <a
+                    href="${pkg.secondaryActionUrl}"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-teal-50 hover:bg-teal-100 text-teal-800 border border-teal-200 transition"
+                  >
+                    <i data-lucide="check-check" class="w-3.5 h-3.5"></i>
+                    <span>${pkg.secondaryActionLabel || 'אישור מסירה'}</span>
+                  </a>
+                ` : ''}
+              </div>
+
+              <!-- Direct Link to Original Gmail Thread -->
+              <div class="flex items-center gap-1.5">
+                ${pkg.gmailUrl ? `
+                  <a
+                    href="${pkg.gmailUrl}"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition"
+                    title="פתח את המייל המקורי ב-Gmail"
+                  >
+                    <i data-lucide="mail" class="w-3.5 h-3.5 text-rose-600"></i>
+                    <span>מייל מקורי</span>
+                  </a>
+                ` : ''}
+                ${pkg.gmailUrlSecondary ? `
+                  <a
+                    href="${pkg.gmailUrlSecondary}"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition"
+                    title="פתח מייל AliExpress משלים"
+                  >
+                    <i data-lucide="mail" class="w-3.5 h-3.5 text-amber-600"></i>
+                    <span>מייל תמונות</span>
+                  </a>
+                ` : ''}
+              </div>
+            </div>
+          </article>
+        `;
+      }).join('');
+
+      if (window.lucide) {
+        window.lucide.createIcons();
+      }
+    }
+
+    function renderAll() {
+      renderKPIs();
+      renderPackagesGrid();
+    }
+
+    // ============================================================================
+    // Smart Email / HTML / SMS Parser (Extracts Real Product Images & Shelf Codes)
+    // ============================================================================
+    function parseRawEmailOrSms(rawText) {
+      const text = (rawText || '').trim();
+      if (!text) return null;
+
+      // Extract tracking number
+      const trackingRegex = /\b(RN\d{9}Y|RS\d{9}[A-Z0-9]{2}|AP\d{14}|LP\d{14}|HRBC\d{10}|CN\d{14}|4PX\d{13}CN|\d{16})\b/i;
+      const trackMatch = text.match(trackingRegex);
+      const trackingNumber = trackMatch ? trackMatch[1].toUpperCase() : 'ORD-' + Math.floor(100000 + Math.random() * 900000);
+
+      // Extract Israel Post shelf code (e.g., ח 1322, ג 4208)
+      const shelfRegex = /(?:מדף|קוד איסוף|מספר מדף)[:\s-]*([א-ת]\s*\d{3,5})/i;
+      const shelfMatch = text.match(shelfRegex);
+      const shelfCode = shelfMatch ? shelfMatch[1].trim() : '';
+
+      // Extract real product image URL if HTML was pasted
+      const imgRegex = /https?:\/\/(?:ae-pic-a1\.aliexpress-media\.com\/kf\/[^\s"'<>]+|media\.terminalx\.com\/[^\s"'<>]+)/i;
+      const imgMatch = text.match(imgRegex);
+      const mainImage = imgMatch ? imgMatch[0] : '';
+
+      // Detect courier / store
+      let store = 'משלוח חדש';
+      if (/aliexpress|אליאקספרס/i.test(text)) store = 'AliExpress';
+      if (/israelpost|דואר ישראל|mypost/i.test(text)) store = 'דואר ישראל';
+      if (/cheetah|צ'יטה|ציטה/i.test(text)) store = "צ'יטה שליחויות";
+      if (/terminal\s*x|טרמינל/i.test(text)) store = 'TERMINAL X';
+      if (/temu|טמו/i.test(text)) store = 'Temu';
+
+      const isReady = /מוכן לאיסוף|ממתין לאיסוף|הגיע לנקודת|מדף/i.test(text) || Boolean(shelfCode);
+
+      return {
+        id: 'pkg_parsed_' + Date.now(),
+        trackingNumber,
+        title: text.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 110) || `משלוח ${trackingNumber}`,
+        store,
+        courier: store,
+        status: isReady ? 'ready_for_pickup' : 'in_transit',
+        shelfCode: shelfCode || (isReady ? 'מוכן לאיסוף' : 'במעקב'),
+        city: /קרית שמונה|תל חי|הרצל/i.test(text) ? 'קרית שמונה' : 'חולון',
+        pickupLocation: isReady ? 'נקודת איסוף (חולץ מהודעה)' : 'בדרך ליעד',
+        updatedAt: new Date().toLocaleDateString('he-IL') + ' ' + new Date().toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' }),
+        mainImage,
+        trackingUrl: `https://mypost.israelpost.co.il/lp?itemcode=${encodeURIComponent(trackingNumber)}`,
+        items: [
+          {
+            name: `פריט מתוך משלוח ${trackingNumber}`,
+            sku: shelfCode ? `מדף ${shelfCode}` : store,
+            qty: 1,
+            img: mainImage
+          }
+        ]
+      };
+    }
+
+    // ============================================================================
+    // Google Apps Script Generator (1-Click Copy for Live Gmail Sync)
+    // ============================================================================
+    function getGoogleAppsScriptCode() {
+      return `// ============================================================================
+// PackTrack Pro v2.0 — Google Apps Script Live Gmail Bridge for yitzhaki173@gmail.com
+// הדבק ב-https://script.google.com -> Deploy -> New deployment -> Web app (Anyone)
+// ============================================================================
+function doGet(e) {
+  const query = 'in:anywhere after:2026/10/20 (AliExpress OR Temu OR "דואר ישראל" OR "צ\\'יטה" OR "TERMINAL X" OR "RTL-SDR")';
+  const threads = GmailApp.search(query, 0, 35);
+  const results = [];
+
+  threads.forEach(thread => {
+    const msgs = thread.getMessages();
+    const lastMsg = msgs[msgs.length - 1];
+    const subject = lastMsg.getSubject() || '';
+    const html = lastMsg.getBody() || '';
+    const plain = lastMsg.getPlainBody() || '';
+
+    // חילוץ תמונות מוצר אמיתיות מ-AliExpress ו-Terminal X
+    const imgMatches = html.match(/https:\\/\\/(?:ae-pic-a1\\.aliexpress-media\\.com\\/kf\\/[A-Za-z0-9._-]+\\.(?:jpg|png)|media\\.terminalx\\.com\\/[^"'\\s<>]+)/gi) || [];
+    const uniqueImgs = [...new Set(imgMatches)];
+
+    // חילוץ מספר מעקב
+    const trackMatch = (subject + ' ' + plain + ' ' + html).match(/\\b(RN\\d{9}Y|RS\\d{9}[A-Z0-9]{2}|AP\\d{14}|LP\\d{14}|HRBC\\d{10}|CN\\d{14}|4PX\\d{13}CN)\\b/i);
+    const trackingNumber = trackMatch ? trackMatch[1].toUpperCase() : ('MSG-' + thread.getId());
+
+    results.push({
+      id: 'gas_' + thread.getId(),
+      trackingNumber: trackingNumber,
+      title: subject,
+      updatedAt: Utilities.formatDate(lastMsg.getDate(), 'Asia/Jerusalem', 'dd/MM/yyyy HH:mm'),
+      mainImage: uniqueImgs[0] || '',
+      allImages: uniqueImgs.slice(0, 8),
+      gmailUrl: 'https://mail.google.com/mail/?authuser=yitzhaki173@gmail.com#all/' + thread.getId()
+    });
+  });
+
+  return ContentService.createTextOutput(JSON.stringify({ status: 'ok', packages: results }))
+    .setMimeType(ContentService.MimeType.JSON);
+}`;
+    }
+
+    // ============================================================================
+    // Event Listeners Wiring
+    // ============================================================================
+    document.addEventListener('DOMContentLoaded', () => {
+      loadStateFromStorage();
+
+      const gasInput = document.getElementById('gasWebhookUrlInput');
+      if (gasInput && appState.gasWebhookUrl) {
+        gasInput.value = appState.gasWebhookUrl;
+      }
+
+      renderAll();
+
+      // Search Input
+      const searchInput = document.getElementById('searchInput');
+      const btnClearSearch = document.getElementById('btnClearSearch');
+      searchInput.addEventListener('input', (e) => {
+        appState.searchQuery = e.target.value;
+        btnClearSearch.classList.toggle('hidden', !appState.searchQuery);
+        renderAll();
+      });
+
+      btnClearSearch.addEventListener('click', () => {
+        appState.searchQuery = '';
+        searchInput.value = '';
+        btnClearSearch.classList.add('hidden');
+        renderAll();
+      });
+
+      // City & Store Selects
+      document.getElementById('cityFilterSelect').addEventListener('change', (e) => {
+        appState.cityFilter = e.target.value;
+        renderAll();
+      });
+      document.getElementById('storeFilterSelect').addEventListener('change', (e) => {
+        appState.storeFilter = e.target.value;
+        renderAll();
+      });
+
+      // Tabs & KPI filters
+      document.querySelectorAll('.status-tab').forEach(btn => {
+        btn.addEventListener('click', () => {
+          appState.activeTab = btn.getAttribute('data-tab') || 'all';
+          renderAll();
+        });
+      });
+
+      document.querySelectorAll('.kpi-card').forEach(card => {
+        card.addEventListener('click', () => {
+          appState.activeTab = card.getAttribute('data-kpi-filter') || 'all';
+          renderAll();
+        });
+      });
+
+      document.querySelectorAll('.quick-filter-trigger').forEach(btn => {
+        btn.addEventListener('click', () => {
+          appState.activeTab = btn.getAttribute('data-quick-filter') || 'ready_for_pickup';
+          renderAll();
+        });
+      });
+
+      // Delegated Clicks inside Packages Grid
+      document.getElementById('packagesContainer').addEventListener('click', (e) => {
+        const copyBtn = e.target.closest('[data-copy-text]');
+        if (copyBtn) {
+          copyTextToClipboard(copyBtn.getAttribute('data-copy-text'), copyBtn.getAttribute('data-copy-label'));
+          return;
+        }
+
+        const delBtn = e.target.closest('[data-delete-pkg]');
+        if (delBtn) {
+          deletePackagePermanently(delBtn.getAttribute('data-delete-pkg'));
+          return;
+        }
+
+        const archBtn = e.target.closest('[data-archive-pkg]');
+        if (archBtn) {
+          toggleArchiveStatus(archBtn.getAttribute('data-archive-pkg'));
+          return;
+        }
+
+        const selectChk = e.target.closest('[data-select-pkg]');
+        if (selectChk) {
+          const pkgId = selectChk.getAttribute('data-select-pkg');
+          if (selectChk.checked) {
+            if (!appState.selectedIds.includes(pkgId)) appState.selectedIds.push(pkgId);
+          } else {
+            appState.selectedIds = appState.selectedIds.filter(id => id !== pkgId);
+          }
+          renderAll();
+        }
+      });
+
+      // Bulk Mode Toggle & Actions
+      document.getElementById('btnToggleBulkMode').addEventListener('click', () => {
+        appState.bulkMode = !appState.bulkMode;
+        if (!appState.bulkMode) appState.selectedIds = [];
+        document.getElementById('bulkModeBtnLabel').textContent = appState.bulkMode ? 'סיום בחירה מרובה' : 'בחירה מרובה ומחיקה';
+        renderAll();
+      });
+
+      document.getElementById('btnSelectAllVisible').addEventListener('click', () => {
+        const visible = getFilteredPackages().map(p => p.id);
+        appState.selectedIds = visible;
+        renderAll();
+      });
+
+      document.getElementById('btnBulkMarkCollected').addEventListener('click', () => {
+        if (appState.selectedIds.length === 0) {
+          showToast('בחר לפחות חבילה אחת קודם', 'warning');
+          return;
+        }
+        appState.packages.forEach(p => {
+          if (appState.selectedIds.includes(p.id)) p.status = 'archived';
+        });
+        const count = appState.selectedIds.length;
+        appState.selectedIds = [];
+        saveStateToStorage();
+        renderAll();
+        showToast(`${count} חבילות סומנו כ"נאסף" והועברו לארכיון!`);
+      });
+
+      document.getElementById('btnBulkDeletePermanent').addEventListener('click', () => {
+        if (appState.selectedIds.length === 0) {
+          showToast('בחר לפחות חבילה אחת למחיקה', 'warning');
+          return;
+        }
+        const count = appState.selectedIds.length;
+        appState.packages.forEach(p => {
+          if (appState.selectedIds.includes(p.id)) {
+            if (!appState.deletedIds.includes(p.id)) appState.deletedIds.push(p.id);
+            if (p.trackingNumber && !appState.deletedIds.includes(p.trackingNumber)) {
+              appState.deletedIds.push(p.trackingNumber);
+            }
+          }
+        });
+        appState.packages = appState.packages.filter(p => !appState.selectedIds.includes(p.id));
+        appState.selectedIds = [];
+        saveStateToStorage();
+        renderAll();
+        showToast(`${count} הזמנות נמחקו לצמיתות ולא יחזרו ברענון!`, 'danger');
+      });
+
+      document.getElementById('btnClearAllPackages').addEventListener('click', () => {
+        clearAllPackagesPermanently();
+      });
+
+      // Restore / Reset Buttons
+      document.getElementById('btnRestoreDefaults').addEventListener('click', restoreAllFromSeed);
+      document.getElementById('btnEmptyRestore').addEventListener('click', restoreAllFromSeed);
+      document.getElementById('btnEmptyShowAll').addEventListener('click', () => {
+        appState.activeTab = 'all';
+        appState.searchQuery = '';
+        appState.cityFilter = 'all';
+        appState.storeFilter = 'all';
+        document.getElementById('searchInput').value = '';
+        renderAll();
+      });
+
+      // Modals Open/Close
+      document.getElementById('btnOpenLiveSync').addEventListener('click', () => {
+        document.getElementById('modalLiveSync').classList.remove('hidden');
+      });
+      document.getElementById('btnOpenParserModal').addEventListener('click', () => {
+        document.getElementById('modalSmartParser').classList.remove('hidden');
+      });
+      document.getElementById('btnOpenAddModal').addEventListener('click', () => {
+        document.getElementById('modalManualAdd').classList.remove('hidden');
+      });
+
+      document.querySelectorAll('[data-close-modal]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const targetId = btn.getAttribute('data-close-modal');
+          document.getElementById(targetId).classList.add('hidden');
+        });
+      });
+
+      // Copy GAS Script
+      document.getElementById('btnCopyGasScript').addEventListener('click', () => {
+        copyTextToClipboard(getGoogleAppsScriptCode(), 'קוד Google Apps Script לסנכרון Gmail');
+      });
+
+      // Run GAS Webhook Sync
+      document.getElementById('btnRunGasSync').addEventListener('click', async () => {
+        const url = document.getElementById('gasWebhookUrlInput').value.trim();
+        const statusEl = document.getElementById('gasSyncStatusText');
+        if (!url) {
+          // Even without external webhook URL, sync against built-in Oct 28 Gmail snapshot respecting deletedIds!
+          const freshSeed = getInitialGmailSeedPackages();
+          let addedCount = 0;
+          freshSeed.forEach(seedPkg => {
+            const isDeleted = appState.deletedIds.includes(seedPkg.id) || appState.deletedIds.includes(seedPkg.trackingNumber);
+            const exists = appState.packages.some(p => p.id === seedPkg.id || p.trackingNumber === seedPkg.trackingNumber);
+            if (!isDeleted && !exists) {
+              appState.packages.unshift(seedPkg);
+              addedCount++;
+            }
+          });
+          saveStateToStorage();
+          renderAll();
+          showToast(`סנכרון הושלם (${addedCount} חדשות נוספו, ${appState.deletedIds.length} מחוקות סוננו)`);
+          return;
+        }
+
+        appState.gasWebhookUrl = url;
+        saveStateToStorage();
+        statusEl.textContent = 'מתחבר ל-Google Apps Script...';
+
+        try {
+          const resp = await fetch(url);
+          const data = await resp.json();
+          if (data && Array.isArray(data.packages)) {
+            let added = 0;
+            data.packages.forEach(incoming => {
+              const isDeleted = appState.deletedIds.includes(incoming.id) || appState.deletedIds.includes(incoming.trackingNumber);
+              const exists = appState.packages.some(p => p.trackingNumber === incoming.trackingNumber);
+              if (!isDeleted && !exists) {
+                appState.packages.unshift({
+                  id: incoming.id || ('gas_' + Date.now()),
+                  trackingNumber: incoming.trackingNumber,
+                  title: incoming.title || 'משלוח מ-Gmail',
+                  store: 'Gmail Live Sync',
+                  courier: 'דואר ישראל / AliExpress',
+                  status: 'in_transit',
+                  shelfCode: 'סונכרן חי',
+                  city: 'חולון',
+                  pickupLocation: 'נשאב אוטומטית מ-Gmail',
+                  updatedAt: incoming.updatedAt || 'עכשיו',
+                  mainImage: incoming.mainImage || '',
+                  gmailUrl: incoming.gmailUrl || '',
+                  items: (incoming.allImages || []).map((imgUrl, idx) => ({
+                    name: `פריט #${idx + 1} מתוך המייל`,
+                    sku: incoming.trackingNumber,
+                    qty: 1,
+                    img: imgUrl
+                  }))
+                });
+                added++;
+              }
+            });
+            saveStateToStorage();
+            renderAll();
+            statusEl.textContent = `סונכרן בהצלחה! נוספו ${added} משלוחים חדשים.`;
+            showToast(`סנכרון חי מ-Gmail הושלם! (${added} חדשים)`);
+          }
+        } catch (err) {
+          statusEl.textContent = 'שגיאת חיבור ל-URL. ודא שהגדרת Who has access: Anyone ב-Apps Script.';
+          showToast('לא ניתן לגשת ל-Webhook, בדוק הרשאות פריסה', 'warning');
+        }
+      });
+
+      // Direct Gmail OAuth Token Sync
+      document.getElementById('btnRunDirectGmailApi').addEventListener('click', async () => {
+        const token = document.getElementById('gmailOAuthTokenInput').value.trim();
+        if (!token) {
+          showToast('הזן Access Token או השתמש בגשר Google Apps Script למעלה', 'warning');
+          return;
+        }
+        try {
+          const q = encodeURIComponent('in:anywhere after:2026/10/20 (AliExpress OR Temu OR דואר ישראל)');
+          const res = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages?q=${q}&maxResults=15`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          if (!res.ok) throw new Error('Token invalid');
+          const json = await res.json();
+          showToast(`נמצאו ${(json.messages || []).length} הודעות חדשות ב-Gmail API!`);
+          document.getElementById('modalLiveSync').classList.add('hidden');
+        } catch (e) {
+          showToast('הטוקן פג תוקף או חסר הרשאת gmail.readonly', 'danger');
+        }
+      });
+
+      // Smart Parser Submit
+      document.getElementById('btnParseAndAdd').addEventListener('click', () => {
+        const raw = document.getElementById('rawEmailPasteInput').value;
+        const parsed = parseRawEmailOrSms(raw);
+        if (!parsed) {
+          showToast('הדבק טקסט מייל או הודעת SMS תחילה', 'warning');
+          return;
+        }
+        appState.packages.unshift(parsed);
+        saveStateToStorage();
+        renderAll();
+        document.getElementById('rawEmailPasteInput').value = '';
+        document.getElementById('modalSmartParser').classList.add('hidden');
+        showToast(`נוספה חבילה חדשה: ${parsed.trackingNumber}`);
+      });
+
+      // Manual Add Submit
+      document.getElementById('manualAddForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const title = document.getElementById('addTitleInput').value.trim();
+        const trackingNumber = document.getElementById('addTrackingInput').value.trim().toUpperCase();
+        const shelfCode = document.getElementById('addShelfInput').value.trim();
+        const courier = document.getElementById('addCourierInput').value.trim() || 'AliExpress / דואר ישראל';
+        const status = document.getElementById('addStatusSelect').value;
+        const pickupLocation = document.getElementById('addLocationInput').value.trim() || 'חולון';
+        const mainImage = document.getElementById('addImageInput').value.trim();
+        const trackingUrl = document.getElementById('addUrlInput').value.trim();
+
+        const newPkg = {
+          id: 'pkg_manual_' + Date.now(),
+          trackingNumber,
+          title,
+          store: courier,
+          courier,
+          status,
+          shelfCode: shelfCode || (status === 'ready_for_pickup' ? 'מוכן לאיסוף' : 'במעקב'),
+          city: pickupLocation.includes('קרית שמונה') ? 'קרית שמונה' : 'חולון',
+          pickupLocation,
+          updatedAt: new Date().toLocaleDateString('he-IL') + ' ' + new Date().toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' }),
+          mainImage,
+          trackingUrl: trackingUrl || `https://mypost.israelpost.co.il/lp?itemcode=${encodeURIComponent(trackingNumber)}`,
+          items: [
+            {
+              name: title,
+              sku: `מעקב: ${trackingNumber}`,
+              qty: 1,
+              img: mainImage
+            }
+          ]
+        };
+
+        appState.packages.unshift(newPkg);
+        saveStateToStorage();
+        renderAll();
+        e.target.reset();
+        document.getElementById('modalManualAdd').classList.add('hidden');
+        showToast(`החבילה ${trackingNumber} נוספה בהצלחה!`);
+      });
+    });
+  </script>
+</body>
+</html>
